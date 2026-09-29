@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Admin — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Admin console</h1>
+<div class="panel wide">
+  <h2 id="form-title">Add product</h2>
+  <form id="prod">
+    <input type="hidden" name="id" id="prod-id" />
+    <label class="field">Name <input name="name" required /></label>
+    <label class="field">Brand <input name="brand" /></label>
+    <label class="field">Description <textarea name="description" rows="2"></textarea></label>
+    <label class="field">Price <input name="price" type="number" step="0.01" required /></label>
+    <label class="field">MRP <input name="mrp" type="number" step="0.01" required /></label>
+    <label class="field">Stock <input name="stock" type="number" required /></label>
+    <label class="field">Image URL <input name="image_url" /></label>
+    <label class="field">Category
+      <select name="category_id" id="cat"></select>
+    </label>
+    <label><input type="checkbox" name="featured" /> Featured</label>
+    <p class="err" id="err"></p>
+    <div class="btn-row">
+      <button class="btn" type="submit" id="save-btn">Create product</button>
+      <button class="btn-ghost hidden" type="button" id="cancel-edit">Cancel</button>
+    </div>
+  </form>
+</div>
+<h2>Orders</h2>
+<table class="table" id="orders"></table>
+<h2>Catalog</h2>
+<table class="table" id="products"></table>
+{% endblock %}
+{% block scripts %}
+<script>
+  let catalog = [];
+
+  function productPayload(fd) {
+    return {
+      name: fd.get("name"),
+      brand: fd.get("brand"),
+      description: fd.get("description"),
+      price: Number(fd.get("price")),
+      mrp: Number(fd.get("mrp")),
+      stock: Number(fd.get("stock")),
+      image_url: fd.get("image_url"),
+      category_id: Number(fd.get("category_id")),
+      featured: fd.get("featured") === "on",
+    };
+  }
+
+  function resetForm() {
+    document.getElementById("prod").reset();
+    document.getElementById("prod-id").value = "";
+    document.getElementById("form-title").textContent = "Add product";
+    document.getElementById("save-btn").textContent = "Create product";
+    document.getElementById("cancel-edit").classList.add("hidden");
+    document.getElementById("err").textContent = "";
+  }
+
+  function editProd(id) {
+    const p = catalog.find((x) => x.id === id);
+    if (!p) return;
+    const form = document.getElementById("prod");
+    form.elements.id.value = p.id;
+    form.elements.name.value = p.name;
+    form.elements.brand.value = p.brand || "";
+    form.elements.description.value = p.description || "";
+    form.elements.price.value = p.price;
+    form.elements.mrp.value = p.mrp;
+    form.elements.stock.value = p.stock;
+    form.elements.image_url.value = p.image_url || "";
+    form.elements.category_id.value = p.category_id;
+    form.elements.featured.checked = !!p.featured;
+    document.getElementById("form-title").textContent = "Edit product #" + p.id;
+    document.getElementById("save-btn").textContent = "Save changes";
+    document.getElementById("cancel-edit").classList.remove("hidden");
+    form.scrollIntoView({ behavior: "smooth" });
+  }
+
+  async function boot() {
+    try {
+      const me = await api.get("/api/auth/me");
+      if (!me.is_admin) { location.href = "/"; return; }
+    } catch { location.href = "/login"; return; }
+    const cats = await api.get("/api/categories");
+    document.getElementById("cat").innerHTML = cats.map((c) => `<option value="${c.id}">${c.name}</option>`).join("");
+    catalog = await api.get("/api/admin/products");
+    document.getElementById("products").innerHTML = "<tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th></th></tr>" +
+      catalog.map((p) => `<tr><td>${p.id}</td><td>${p.name}</td><td>${money(p.price)}</td><td>${p.stock}</td>
+        <td>
+          <button class="btn-ghost" onclick="editProd(${p.id})">Edit</button>
+          <button class="btn-ghost" onclick="delProd(${p.id})">Delete</button>
+        </td></tr>`).join("");
+    const orders = await api.get("/api/admin/orders");
+    document.getElementById("orders").innerHTML = "<tr><th>ID</th><th>Total</th><th>Status</th><th>Update</th></tr>" +
+      orders.map((o) => `<tr><td>#${o.id}</td><td>${money(o.total)}</td><td>${o.status}</td>
+        <td><select onchange="setStatus(${o.id}, this.value)">
+          ${["pending","confirmed","shipped","delivered","cancelled"].map((s) =>
+            `<option ${s===o.status?"selected":""}>${s}</option>`).join("")}
+        </select></td></tr>`).join("");
+  }
+  document.getElementById("prod").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const id = fd.get("id");
+    try {
+      if (id) await api.put("/api/admin/products/" + id, productPayload(fd));
+      else await api.post("/api/admin/products", productPayload(fd));
+      location.reload();
+    } catch (err) {
+      document.getElementById("err").textContent = err.message;
+    }
+  });
+  document.getElementById("cancel-edit").addEventListener("click", resetForm);
+  async function delProd(id) {
+    if (!confirm("Delete product?")) return;
+    await api.del("/api/admin/products/" + id);
+    location.reload();
+  }
+  async function setStatus(id, status) {
+    await api.patch("/api/admin/orders/" + id, { status });
+  }
+  boot();
+</script>
+{% endblock %}

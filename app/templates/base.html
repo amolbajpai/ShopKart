@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body id="top">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="logo" href="/">{{ app_name }}<span>.in</span></a>
+      <form class="search" action="/" method="get">
+        <select name="category" id="search-cat">
+          <option value="">All</option>
+        </select>
+        <input type="search" name="q" id="search-q" placeholder="Search ShopKart" />
+        <button type="submit" aria-label="Search">⌕</button>
+      </form>
+      <nav class="account">
+        <a href="/login" id="nav-hello">Hello, sign in<br /><strong>Account</strong></a>
+        <a href="/orders">Returns<br /><strong>&amp; Orders</strong></a>
+        <a href="/wishlist" class="icon-link">♡ Wishlist</a>
+        <a href="/cart" class="cart-link">🛒 Cart <span id="cart-count">0</span></a>
+        <a href="/admin" id="nav-admin" class="hidden">Admin</a>
+        <button id="nav-logout" class="link-btn hidden" type="button">Sign out</button>
+      </nav>
+    </div>
+    <div class="catbar" id="catbar"></div>
+  </header>
+  <main class="page">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer">
+    <a href="#top" class="back-top">Back to top</a>
+    <p>© 2026 {{ app_name }}</p>
+  </footer>
+  <button type="button" class="ravi-launcher" id="ravi-launcher" aria-label="Ask Ravi">
+    <span class="ravi-dot">R</span>
+    <span>Ask Ravi</span>
+  </button>
+  <section class="ravi-panel hidden" id="ravi-panel" aria-label="Ravi AI Assistant">
+    <header class="ravi-head">
+      <div>
+        <strong>Ravi</strong>
+        <span>AI Assistant</span>
+      </div>
+      <button type="button" class="ravi-close" id="ravi-close" aria-label="Close">×</button>
+    </header>
+    <div class="ravi-thread" id="ravi-thread"></div>
+    <div class="ravi-chips" id="ravi-chips">
+      <button type="button" data-q="Headphones under ₹30,000">Headphones under ₹30,000</button>
+      <button type="button" data-q="Compare Galaxy S24 and MacBook Air">Compare top gadgets</button>
+      <button type="button" data-q="What categories does ShopKart have?">Store categories</button>
+    </div>
+    <form class="ravi-form" id="ravi-form">
+      <input id="ravi-input" type="text" maxlength="2000" placeholder="Ask Ravi about products…" autocomplete="off" />
+      <button type="submit">Send</button>
+    </form>
+  </section>
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/ravi.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

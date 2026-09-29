@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Wishlist — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Your Wishlist</h1>
+<div class="grid" id="grid">Loading…</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  async function loadWish() {
+    try {
+      const items = await api.get("/api/wishlist");
+      document.getElementById("grid").innerHTML = items.length ? items.map((i) => `
+        <article class="card">
+          <a href="/product/${i.product_id}"><img src="${i.image_url}" alt="${i.name}" /></a>
+          <h3>${i.name}</h3>
+          <div class="price">${money(i.price)}</div>
+          <div class="btn-row">
+            <button class="btn" onclick="addCart(${i.product_id})">Add to Cart</button>
+            <button class="btn-ghost" onclick="removeWish(${i.product_id})">Remove</button>
+          </div>
+        </article>`).join("") : "<p>Your wishlist is empty.</p>";
+    } catch { location.href = "/login"; }
+  }
+  async function removeWish(id) {
+    await api.del("/api/wishlist/" + id);
+    loadWish();
+  }
+  loadWish();
+</script>
+{% endblock %}

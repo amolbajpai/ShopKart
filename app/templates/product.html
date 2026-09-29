@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Product — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="detail" id="detail">Loading…</div>
+<section class="panel wide">
+  <h2>Customer reviews</h2>
+  <form id="review-form">
+    <label class="field">Rating
+      <select name="rating">
+        <option value="5">5 — Excellent</option>
+        <option value="4">4 — Good</option>
+        <option value="3">3 — Average</option>
+        <option value="2">2 — Poor</option>
+        <option value="1">1 — Terrible</option>
+      </select>
+    </label>
+    <label class="field">Comment <textarea name="comment" rows="3"></textarea></label>
+    <button class="btn" type="submit">Write a review</button>
+    <p class="err" id="review-err"></p>
+  </form>
+  <div id="reviews"></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+  const pid = {{ product_id }};
+  async function load() {
+    const p = await api.get("/api/products/" + pid);
+    document.title = p.name + " — ShopKart";
+    document.getElementById("detail").innerHTML = `
+      <img class="detail-img" src="${p.image_url}" alt="${p.name}" />
+      <div>
+        <div class="brand">${p.brand} · ${p.category ? p.category.name : ""}</div>
+        <h1>${p.name}</h1>
+        <div class="stars">${stars(p.rating)} (${p.review_count} ratings)</div>
+        <p><span class="price">${money(p.price)}</span><span class="mrp">${money(p.mrp)}</span></p>
+        <p>${p.description}</p>
+        <p class="${p.stock ? "ok" : "err"}">${p.stock ? "In stock (" + p.stock + ")" : "Out of stock"}</p>
+        <label>Qty <input class="qty" id="qty" type="number" min="1" max="${p.stock}" value="1" /></label>
+        <div class="btn-row">
+          <button class="btn" onclick="addCart(${p.id}, Number(document.getElementById('qty').value))">Add to Cart</button>
+          <button class="btn-ghost" onclick="toggleWish(${p.id})">Add to Wishlist</button>
+        </div>
+      </div>`;
+    const reviews = await api.get(`/api/products/${pid}/reviews`);
+    document.getElementById("reviews").innerHTML = reviews.map((r) =>
+      `<div class="review"><strong>${r.user_name}</strong> · ${stars(r.rating)}<p>${r.comment || ""}</p></div>`
+    ).join("") || "<p class='muted'>No reviews yet.</p>";
+  }
+  document.getElementById("review-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    try {
+      await api.post(`/api/products/${pid}/reviews`, {
+        rating: Number(fd.get("rating")),
+        comment: fd.get("comment"),
+      });
+      load();
+    } catch (err) {
+      document.getElementById("review-err").textContent = err.message;
+    }
+  });
+  load();
+</script>
+{% endblock %}

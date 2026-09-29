@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Order — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Order details</h1>
+<div id="box">Loading…</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  api.get("/api/orders/{{ order_id }}").then((o) => {
+    document.getElementById("box").innerHTML = `
+      <div class="panel wide">
+        <p><strong>Order #${o.id}</strong> · <span class="badge">${o.status}</span></p>
+        <p class="muted">${new Date(o.created_at).toLocaleString()}</p>
+        <p>Ship to: ${o.address_text}</p>
+        ${o.items.map((i) => `<p>${i.name} × ${i.quantity} — ${money(i.line_total)}</p>`).join("")}
+        <p><strong>Total: ${money(o.total)}</strong></p>
+        <a href="/orders">Back to orders</a>
+      </div>`;
+  }).catch(() => location.href = "/orders");
+</script>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Sign in — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="auth-box">
+  <h1>Sign in</h1>
+  <form id="login-form">
+    <label class="field">Email <input type="email" name="email" required value="demo@shopkart.com" /></label>
+    <label class="field">Password <input type="password" name="password" required value="demo123" /></label>
+    <p class="err" id="err"></p>
+    <button class="btn" type="submit">Continue</button>
+  </form>
+  <div class="oauth" id="oauth"></div>
+  <p class="muted">New to ShopKart? <a href="/register"><strong>Create an account</strong></a></p>
+  <p class="muted">Demo: demo@shopkart.com / demo123 · Admin: admin@shopkart.com / admin123</p>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  api.get("/api/auth/providers").then((p) => {
+    const box = document.getElementById("oauth");
+    if (p.google) box.innerHTML += `<a class="btn-ghost" href="/api/auth/oauth/google">Continue with Google</a>`;
+    if (p.github) box.innerHTML += `<a class="btn-ghost" href="/api/auth/oauth/github">Continue with GitHub</a>`;
+  });
+  document.getElementById("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    try {
+      await api.post("/api/auth/login", { email: fd.get("email"), password: fd.get("password") });
+      location.href = "/";
+    } catch (err) {
+      document.getElementById("err").textContent = err.message;
+    }
+  });
+</script>
+{% endblock %}

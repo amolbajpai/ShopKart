@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Your account — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="panel wide">
+  <h1>Your account</h1>
+  <form id="prof">
+    <label class="field">Name <input name="full_name" id="full_name" required /></label>
+    <p class="muted" id="email"></p>
+    <button class="btn" type="submit">Save</button>
+    <p class="ok" id="saved"></p>
+  </form>
+  <h2>Saved addresses</h2>
+  <div id="addrs"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  async function load() {
+    try {
+      const me = await api.get("/api/users/me");
+      document.getElementById("full_name").value = me.full_name;
+      document.getElementById("email").textContent = me.email + (me.is_admin ? " · Admin" : "");
+      const addrs = await api.get("/api/users/me/addresses");
+      document.getElementById("addrs").innerHTML = addrs.map((a) =>
+        `<p>${a.full_name}, ${a.line1}, ${a.city} ${a.pincode}
+         <button class="btn-ghost" onclick="delAddr(${a.id})">Delete</button></p>`
+      ).join("") || "<p class='muted'>No addresses saved.</p>";
+    } catch { location.href = "/login"; }
+  }
+  document.getElementById("prof").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await api.put("/api/users/me", { full_name: document.getElementById("full_name").value });
+    document.getElementById("saved").textContent = "Saved";
+  });
+  async function delAddr(id) {
+    await api.del("/api/users/me/addresses/" + id);
+    load();
+  }
+  load();
+</script>
+{% endblock %}

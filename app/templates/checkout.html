@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Checkout — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Checkout</h1>
+<div class="panel wide">
+  <h2>Delivery address</h2>
+  <div id="addresses"></div>
+  <form id="addr-form">
+    <h3>Add a new address</h3>
+    <label class="field">Full name <input name="full_name" required /></label>
+    <label class="field">Phone <input name="phone" required /></label>
+    <label class="field">Address <input name="line1" required /></label>
+    <label class="field">City <input name="city" required /></label>
+    <label class="field">State <input name="state" required /></label>
+    <label class="field">Pincode <input name="pincode" required /></label>
+    <button class="btn-ghost" type="submit">Save address</button>
+  </form>
+  <p><strong id="pay-total"></strong></p>
+  <p class="muted">Payment is simulated for this demo — placing an order confirms it instantly.</p>
+  <p class="err" id="err"></p>
+  <button class="btn" id="place">Place your order</button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  let selected = null;
+  async function load() {
+    try {
+      const [addrs, cart] = await Promise.all([api.get("/api/users/me/addresses"), api.get("/api/cart")]);
+      if (!cart.items.length) { location.href = "/cart"; return; }
+      document.getElementById("pay-total").textContent = "Order total: " + money(cart.subtotal);
+      document.getElementById("addresses").innerHTML = addrs.map((a) => `
+        <label class="card" style="margin-bottom:8px">
+          <input type="radio" name="addr" value="${a.id}" ${a.is_default ? "checked" : ""} />
+          ${a.full_name}, ${a.line1}, ${a.city}, ${a.state} - ${a.pincode} · ${a.phone}
+        </label>`).join("") || "<p class='muted'>Add an address to continue.</p>";
+      const first = document.querySelector("input[name=addr]");
+      if (first) selected = Number(first.value);
+      document.querySelectorAll("input[name=addr]").forEach((el) => {
+        el.addEventListener("change", () => selected = Number(el.value));
+      });
+    } catch { location.href = "/login"; }
+  }
+  document.getElementById("addr-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    await api.post("/api/users/me/addresses", Object.fromEntries(fd.entries()));
+    e.target.reset();
+    load();
+  });
+  document.getElementById("place").addEventListener("click", async () => {
+    if (!selected) { document.getElementById("err").textContent = "Choose an address"; return; }
+    try {
+      const order = await api.post("/api/orders", { address_id: selected });
+      location.href = "/orders/" + order.id;
+    } catch (err) {
+      document.getElementById("err").textContent = err.message;
+    }
+  });
+  load();
+</script>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Cart — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Shopping Cart</h1>
+<div id="cart-box">Loading…</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  async function loadCart() {
+    try {
+      const cart = await api.get("/api/cart");
+      if (!cart.items.length) {
+        document.getElementById("cart-box").innerHTML = "<p>Your cart is empty. <a href='/'>Continue shopping</a></p>";
+        return;
+      }
+      document.getElementById("cart-box").innerHTML = cart.items.map((i) => `
+        <div class="line">
+          <img src="${i.image_url}" alt="${i.name}" />
+          <div>
+            <a href="/product/${i.product_id}"><strong>${i.name}</strong></a>
+            <p class="price">${money(i.price)}</p>
+            <label>Qty
+              <input class="qty" type="number" min="1" max="${i.stock}" value="${i.quantity}"
+                onchange="updateQty(${i.id}, this.value)" />
+            </label>
+          </div>
+          <strong>${money(i.line_total)}</strong>
+          <button class="btn-ghost" onclick="removeItem(${i.id})">Remove</button>
+        </div>
+      `).join("") + `
+        <p><strong>Subtotal (${cart.count} items): ${money(cart.subtotal)}</strong></p>
+        <a class="btn" href="/checkout">Proceed to checkout</a>`;
+    } catch {
+      location.href = "/login";
+    }
+  }
+  async function updateQty(id, qty) {
+    await api.patch("/api/cart/" + id, { quantity: Number(qty) });
+    loadCart();
+    refreshCartCount();
+  }
+  async function removeItem(id) {
+    await api.del("/api/cart/" + id);
+    loadCart();
+    refreshCartCount();
+  }
+  loadCart();
+</script>
+{% endblock %}

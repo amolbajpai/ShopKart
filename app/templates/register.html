@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Create account — {{ app_name }}{% endblock %}
+{% block content %}
+<div class="auth-box">
+  <h1>Create account</h1>
+  <form id="reg-form">
+    <label class="field">Your name <input name="full_name" required minlength="2" /></label>
+    <label class="field">Email <input type="email" name="email" required /></label>
+    <label class="field">Password <input type="password" name="password" required minlength="6" /></label>
+    <p class="err" id="err"></p>
+    <button class="btn" type="submit">Create your ShopKart account</button>
+  </form>
+  <p class="muted">Already have an account? <a href="/login"><strong>Sign in</strong></a></p>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.getElementById("reg-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    try {
+      await api.post("/api/auth/register", {
+        full_name: fd.get("full_name"),
+        email: fd.get("email"),
+        password: fd.get("password"),
+      });
+      location.href = "/";
+    } catch (err) {
+      document.getElementById("err").textContent = err.message;
+    }
+  });
+</script>
+{% endblock %}

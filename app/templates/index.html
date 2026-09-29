@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ app_name }} — Shop online{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Great deals. Fast delivery. Everyday prices.</h1>
+  <p>Shop electronics, fashion, home, books and more — all from one FastAPI store.</p>
+</section>
+<div class="filters">
+  <select id="sort">
+    <option value="featured">Featured</option>
+    <option value="price_asc">Price: Low to High</option>
+    <option value="price_desc">Price: High to Low</option>
+    <option value="rating">Customer rating</option>
+  </select>
+</div>
+<h2 class="section-title" id="grid-title">Today's picks</h2>
+<div class="grid" id="product-grid"></div>
+{% endblock %}
+{% block scripts %}
+<script>
+  async function loadProducts() {
+    const params = new URLSearchParams(location.search);
+    const sort = document.getElementById("sort").value;
+    if (sort) params.set("sort", sort);
+    const items = await api.get("/api/products?" + params.toString());
+    const title = document.getElementById("grid-title");
+    const q = params.get("q");
+    const cat = params.get("category");
+    title.textContent = q ? `Results for “${q}”` : (cat ? cat.replace(/^\w/, (c) => c.toUpperCase()) : "Today's picks");
+    document.getElementById("product-grid").innerHTML = items.length
+      ? items.map(productCard).join("")
+      : "<p>No products found.</p>";
+  }
+  document.getElementById("sort").addEventListener("change", loadProducts);
+  loadProducts();
+</script>
+{% endblock %}

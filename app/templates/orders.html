@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Your orders — {{ app_name }}{% endblock %}
+{% block content %}
+<h1>Your Orders</h1>
+<div id="box">Loading…</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  api.get("/api/orders").then((orders) => {
+    document.getElementById("box").innerHTML = orders.length ? orders.map((o) => `
+      <div class="line">
+        <div></div>
+        <div>
+          <a href="/orders/${o.id}"><strong>Order #${o.id}</strong></a>
+          <p class="muted">${new Date(o.created_at).toLocaleString()}</p>
+          <span class="badge">${o.status}</span>
+        </div>
+        <strong>${money(o.total)}</strong>
+        <a class="btn-ghost" href="/orders/${o.id}">View</a>
+      </div>`).join("") : "<p>You have no orders yet.</p>";
+  }).catch(() => location.href = "/login");
+</script>
+{% endblock %}
